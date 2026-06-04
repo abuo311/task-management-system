@@ -602,9 +602,7 @@ const Dashboard = () => {
                                                                                     task.id
                                                                                 )
                                                                                     ? prev.filter(
-                                                                                          (
-                                                                                              i
-                                                                                          ) =>
+                                                                                          (i) =>
                                                                                               i !==
                                                                                               task.id
                                                                                       )
@@ -612,6 +610,7 @@ const Dashboard = () => {
                                                                                           ...prev,
                                                                                           task.id
                                                                                       ]
+                                                                        )
                                                                     }
                                                                     className="w-4 h-4 rounded border-slate-300 text-blue-600"
                                                                 />
