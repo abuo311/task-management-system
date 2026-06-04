@@ -1,0 +1,11 @@
+@import "tailwindcss";
+
+/* If you want to keep your custom body styles, put them below the import */
+@layer base {
+  body {
+    background-color: #f8fafc; /* This is slate-50 */
+    color: #1e293b;            /* This is slate-800 */
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+}

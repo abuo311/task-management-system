@@ -1,0 +1,24 @@
+/* tailwindcss v3.0+ */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html {
+    overscroll-behavior-y: contain; 
+    scroll-behavior: smooth;
+  }
+}
+
+@layer utilities {
+  .no-scrollbar::-webkit-scrollbar,
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+
+  .no-scrollbar,
+  .scrollbar-hide {
+    -ms-overflow-style: none;  /* IE and Edge */
+    scrollbar-width: none;     /* Firefox */
+  }
+}
