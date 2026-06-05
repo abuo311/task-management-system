@@ -1,13 +1,20 @@
+
 package com.taskmanager.entities;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.userdetails.UserDetails;
 
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 
 @Entity
@@ -15,38 +22,72 @@ import java.util.List;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class Laborer {
+public class Laborer implements UserDetails {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @JsonProperty("username")
     @Column(nullable = false, unique = true)
     private String username;
+
+    @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
+    @Column(nullable = false)
+    private String password;
 
     @Column(nullable = false)
     private String name;
 
     private String contactNumber;
-
-    // e.g., "Washroom", "Grounds", "Sanitation"
     private String trade;
 
-    // --- NEW FIELDS FOR USTED REQUIREMENTS ---
-
-    @Enumerated(EnumType.STRING)
+    @Enumerated(EnumType.STRING) // Still an Enum
     @Column(nullable = false)
-    private EmploymentType employmentType; // CASUAL or FULL_TIME
+    private EmploymentType employmentType;
 
     @Column(nullable = false)
-    private String workCategory;
+    private String workCategory; // Changed to String
 
     @Column(nullable = false)
-    private LocalDate hireDate; // Needed to track the 7-8 year promotion rule
-
-    // ------------------------------------------
+    private LocalDate hireDate;
 
     private LocalDate registrationDate;
+
+    @OneToMany(mappedBy = "laborer")
+    @JsonIgnoreProperties("laborer")
+    private List<Task> tasks;
+
+    // --- Security / UserDetails Methods ---
+    // --- Security / UserDetails Methods ---
+
+    @Override
+    public Collection<? extends GrantedAuthority> getAuthorities() {
+        // Assign the LABORER role to this entity
+        return Collections.singletonList(new SimpleGrantedAuthority("ROLE_LABORER"));
+    }
+
+    @Override
+    public boolean isAccountNonExpired() {
+        return true;
+    }
+
+    @Override
+    public boolean isAccountNonLocked() {
+        return true;
+    }
+
+    @Override
+    public boolean isCredentialsNonExpired() {
+        return true;
+    }
+
+    @Override
+    public boolean isEnabled() {
+        return true;
+    }
+
+    // --- Lifecycle and Business Logic ---
 
     @PrePersist
     protected void onCreate() {
@@ -57,31 +98,19 @@ public class Laborer {
     }
 
     public boolean isEligibleForPromotion() {
-        // 1. If hireDate is null, they cannot be eligible
-        if (this.hireDate == null) {
+        if (this.hireDate == null)
             return false;
-        }
-
-        // 2. Already FULL_TIME, not eligible
-        if (this.employmentType == EmploymentType.FULL_TIME) {
+        // employmentType is still an Enum, so this remains safe
+        if (this.employmentType == EmploymentType.FULL_TIME)
             return false;
-        }
-
-        // 3. Perform calculation safely
-        long yearsOfService = ChronoUnit.YEARS.between(hireDate, LocalDate.now());
-        return yearsOfService >= 8;
+        return ChronoUnit.YEARS.between(hireDate, LocalDate.now()) >= 8;
     }
 
-    @OneToMany(mappedBy = "laborer")
-    @JsonIgnoreProperties("laborer")
-    private List<Task> tasks;
+    // --- Enums ---
 
-    // Helper Enums
     public enum EmploymentType {
         CASUAL, FULL_TIME, PART_TIME, CONTRACTOR
     }
 
-    public enum WorkCategory {
-        CONSERVANCY, CLEANERS, GROUNDS, GROUNDS_AND_GARDEN, SANITATION
-    }
+    // Note: WorkCategory enum was removed
 }

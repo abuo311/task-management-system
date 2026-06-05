@@ -2,10 +2,9 @@ package com.taskmanager.services;
 
 import com.taskmanager.entities.Laborer;
 import com.taskmanager.repositories.LaborerRepository;
-import com.taskmanager.repositories.SpecializationRepository; // Import your repo
+import com.taskmanager.repositories.SpecializationRepository;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -18,7 +17,10 @@ public class LaborerService {
     private LaborerRepository laborerRepository;
 
     @Autowired
-    private SpecializationRepository specializationRepository; // Added for validation
+    private SpecializationRepository specializationRepository;
+
+    @Autowired
+    private PasswordEncoder passwordEncoder;
 
     public List<Laborer> getAllLaborers() {
         return laborerRepository.findAll();
@@ -29,21 +31,26 @@ public class LaborerService {
     }
 
     /**
-     * Saves a new laborer, validates the workCategory,
-     * and assigns the current username.
+     * Saves a new laborer with validation and secure password hashing.
      */
     public Laborer saveLaborer(Laborer laborer) {
-        // Validate Category
-        if (!specializationRepository.existsByNameIgnoreCase(laborer.getWorkCategory())) {
-            throw new RuntimeException("Invalid work category: " + laborer.getWorkCategory());
+        // 1. Check for duplicate username
+        if (laborerRepository.existsByUsername(laborer.getUsername())) {
+            throw new RuntimeException("Laborer with username " + laborer.getUsername() + " already exists.");
         }
 
-        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        if (auth != null && auth.isAuthenticated() && !"anonymousUser".equals(auth.getPrincipal())) {
-            laborer.setUsername(auth.getName());
-        } else {
-            laborer.setUsername("system");
+        // 2. Validate Category (Directly use the String value)
+        if (laborer.getWorkCategory() == null ||
+                !specializationRepository.existsByNameIgnoreCase(laborer.getWorkCategory())) {
+            throw new RuntimeException("Invalid or missing work category.");
         }
+
+        // 3. MANDATORY Password Encryption
+        if (laborer.getPassword() == null || laborer.getPassword().trim().isEmpty()) {
+            throw new RuntimeException("Password is required for new laborer.");
+        }
+        laborer.setPassword(passwordEncoder.encode(laborer.getPassword()));
+
         return laborerRepository.save(laborer);
     }
 
@@ -51,9 +58,10 @@ public class LaborerService {
      * Updates an existing laborer's profile with validation.
      */
     public Laborer updateLaborer(Long id, Laborer updatedLaborer) {
-        // Validate Category before updating
-        if (!specializationRepository.existsByNameIgnoreCase(updatedLaborer.getWorkCategory())) {
-            throw new RuntimeException("Invalid work category: " + updatedLaborer.getWorkCategory());
+        // Validate Category (Directly use the String value)
+        if (updatedLaborer.getWorkCategory() == null ||
+                !specializationRepository.existsByNameIgnoreCase(updatedLaborer.getWorkCategory())) {
+            throw new RuntimeException("Invalid or missing work category.");
         }
 
         return laborerRepository.findById(id).map(existingLaborer -> {
@@ -62,6 +70,11 @@ public class LaborerService {
             existingLaborer.setEmploymentType(updatedLaborer.getEmploymentType());
             existingLaborer.setWorkCategory(updatedLaborer.getWorkCategory());
             existingLaborer.setHireDate(updatedLaborer.getHireDate());
+
+            // Update password only if a new one is provided
+            if (updatedLaborer.getPassword() != null && !updatedLaborer.getPassword().trim().isEmpty()) {
+                existingLaborer.setPassword(passwordEncoder.encode(updatedLaborer.getPassword()));
+            }
 
             return laborerRepository.save(existingLaborer);
         }).orElseThrow(() -> new RuntimeException("Laborer not found with id: " + id));

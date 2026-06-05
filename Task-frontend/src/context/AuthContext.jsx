@@ -10,7 +10,7 @@ export const AuthProvider = ({ children }) => {
     // Helper to ensure roles are consistently formatted
     const normalizeRoles = (roles) => {
         const rawRoles = Array.isArray(roles) ? roles : roles ? [roles] : [];
-        // Optional: Pre-strip 'ROLE_' prefix if you want internal state to be clean
+        // Strips 'ROLE_' prefix if present and ensures uppercase
         return rawRoles.map(role => role.replace('ROLE_', '').toUpperCase());
     };
 
@@ -40,43 +40,54 @@ export const AuthProvider = ({ children }) => {
 
     const login = async (username, password) => {
         try {
+            console.log("Attempting login for:", username);
             const response = await api.post('/auth/login', { username, password });
-            const { token, roles, username: returnedUsername, fullName, phoneNumber } = response.data;
-
-            const userData = {
-                username: returnedUsername || username,
-                token: token,
-                roles: normalizeRoles(roles),
-                fullName: fullName,
-                phoneNumber: phoneNumber
+            
+            // 1. Process the response data
+            const userData = response.data;
+            
+            // 2. Prepare user object with normalized roles
+            const authenticatedUser = {
+                ...userData,
+                roles: normalizeRoles(userData.roles || [])
             };
-            
-            localStorage.setItem('user', JSON.stringify(userData));
-            setUser(userData);
-            
+
+            // 3. Save to LocalStorage so it persists on refresh
+            localStorage.setItem('user', JSON.stringify(authenticatedUser));
+
+            // 4. Update state to trigger UI re-render
+            setUser(authenticatedUser);
+
+            console.log("Login successful", authenticatedUser);
             return { success: true };
+            
         } catch (error) {
-            console.error("Login failed:", error.response?.data || error.message);
-            const errorMessage = error.response?.data?.message || "Invalid credentials";
-            return { success: false, message: errorMessage };
+            if (error.response) {
+                console.error("Server Error:", error.response.status, error.response.data);
+                return { success: false, message: error.response.data.message || "Unauthorized" };
+            } else if (error.request) {
+                console.error("No response from server:", error.request);
+                return { success: false, message: "Server is unreachable" };
+            } else {
+                console.error("Error setting up request:", error.message);
+                return { success: false, message: "Client error" };
+            }
         }
     };
 
     const logout = () => {
         localStorage.removeItem('user');
         setUser(null);
-        // Using window.location.href ensures a clean state on redirect
         window.location.href = '/login';
     };
 
     const updateUserData = (newData) => {
         setUser(prev => {
             if (!prev) return null;
-            const updated = { 
-                ...prev, 
+            const updated = {
+                ...prev,
                 ...newData,
-                // Re-normalize in case the update included roles
-                roles: newData.roles ? normalizeRoles(newData.roles) : prev.roles 
+                roles: newData.roles ? normalizeRoles(newData.roles) : prev.roles
             };
             localStorage.setItem('user', JSON.stringify(updated));
             return updated;
@@ -85,27 +96,28 @@ export const AuthProvider = ({ children }) => {
 
     const hasRole = useCallback((requiredRole) => {
         if (!user || !user.roles) return false;
-        
-        const rolesToMatch = Array.isArray(requiredRole) 
-            ? requiredRole.map(r => r.replace('ROLE_', '').toUpperCase()) 
+
+        const rolesToMatch = Array.isArray(requiredRole)
+            ? requiredRole.map(r => r.replace('ROLE_', '').toUpperCase())
             : [requiredRole.replace('ROLE_', '').toUpperCase()];
 
         return user.roles.some(userRole => rolesToMatch.includes(userRole));
     }, [user]);
 
-    // Convenient booleans for quick UI checks
+    // Role helpers
     const isAdmin = useMemo(() => hasRole(['ADMIN', 'SYSTEM_ADMIN']), [hasRole]);
     const isManager = useMemo(() => hasRole(['MANAGER', 'ADMIN', 'SYSTEM_ADMIN']), [hasRole]);
+    // This will return true if the backend returns 'ROLE_LABORER' or 'LABORER'
     const isLaborer = useMemo(() => hasRole('LABORER'), [hasRole]);
 
     return (
-        <AuthContext.Provider value={{ 
-            user, 
-            setUser, 
-            updateUserData, 
-            login, 
-            logout, 
-            loading, 
+        <AuthContext.Provider value={{
+            user,
+            setUser,
+            updateUserData,
+            login,
+            logout,
+            loading,
             hasRole,
             isAdmin,
             isManager,

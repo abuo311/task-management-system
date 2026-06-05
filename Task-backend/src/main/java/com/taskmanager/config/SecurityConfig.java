@@ -62,34 +62,33 @@ public class SecurityConfig {
                 .csrf(csrf -> csrf.disable())
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
-                        // 1. PUBLIC
+                        // 1. PUBLIC ENDPOINTS
                         .requestMatchers("/api/auth/**").permitAll()
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
 
-                        // 2. SPECIFIC USER & DASHBOARD ENDPOINTS
-                        .requestMatchers("/api/users/profile").authenticated()
-                        .requestMatchers("/api/dashboard/**").authenticated()
-                        .requestMatchers("/api/users/stats", "/api/users/dashboard-data").authenticated()
+                        // 2. AUTHENTICATED ENDPOINTS
+                        .requestMatchers("/api/tasks/my-tasks", "/api/users/profile", "/api/dashboard/**",
+                                "/api/users/stats", "/api/users/dashboard-data")
+                        .authenticated()
 
-                        // 3. RESTRICTED USER MANAGEMENT
+                        // 3. ROLE-BASED ACCESS
                         .requestMatchers("/api/users/**").hasAnyRole("SYSTEM_ADMIN", "ADMIN")
 
                         // 4. TASK/LABORER/ATTENDANCE MODIFICATIONS
                         .requestMatchers(HttpMethod.POST, "/api/laborers/**", "/api/tasks/**", "/api/attendance/**")
-                        .hasAnyRole("SYSTEM_ADMIN", "MANAGER", "ADMIN")
+                        .hasAnyRole("SYSTEM_ADMIN", "MANAGER", "ADMIN", "LABORER")
                         .requestMatchers(HttpMethod.PUT, "/api/laborers/**", "/api/tasks/**", "/api/attendance/**")
-                        .hasAnyRole("SYSTEM_ADMIN", "MANAGER", "ADMIN")
+                        .hasAnyRole("SYSTEM_ADMIN", "MANAGER", "ADMIN", "LABORER")
                         .requestMatchers(HttpMethod.DELETE, "/api/laborers/**", "/api/tasks/**", "/api/attendance/**")
-                        .hasAnyRole("SYSTEM_ADMIN", "MANAGER", "ADMIN")
+                        .hasAnyRole("SYSTEM_ADMIN", "MANAGER", "ADMIN", "LABORER")
                         .requestMatchers(HttpMethod.PATCH, "/api/tasks/**")
-                        .hasAnyRole("SYSTEM_ADMIN", "MANAGER", "ADMIN", "USER")
+                        .hasAnyRole("SYSTEM_ADMIN", "MANAGER", "ADMIN", "USER", "LABORER")
 
-                        // 5. GENERAL READ ACCESS (GET)
+                        // 5. GENERAL READ ACCESS
                         .requestMatchers(HttpMethod.GET, "/api/laborers/**", "/api/tasks/**", "/api/attendance/**",
                                 "/api/specializations/**")
                         .authenticated()
 
-                        // 6. CATCH-ALL
                         .anyRequest().authenticated())
                 .authenticationProvider(authenticationProvider())
                 .addFilterBefore(authenticationJwtTokenFilter(), UsernamePasswordAuthenticationFilter.class);
@@ -100,13 +99,12 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-
-        // Explicit origin set
         configuration.setAllowedOrigins(List.of("http://localhost:5173"));
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(
                 Arrays.asList("Authorization", "Content-Type", "Origin", "Accept", "X-Requested-With"));
         configuration.setAllowCredentials(true);
+        configuration.setExposedHeaders(List.of("Authorization"));
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", configuration);

@@ -3,6 +3,7 @@ package com.taskmanager.controllers;
 import com.taskmanager.entities.Laborer;
 import com.taskmanager.services.LaborerService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
@@ -24,13 +25,17 @@ public class LaborerController {
 
     @PostMapping
     @PreAuthorize("hasAnyAuthority('ROLE_SYSTEM_ADMIN', 'ROLE_ADMIN', 'ROLE_MANAGER')")
-    public ResponseEntity<Laborer> addLaborer(@RequestBody Laborer laborer) {
-        // Validation: Ensure the object is not null
-        if (laborer == null) {
-            return ResponseEntity.badRequest().build();
+    public ResponseEntity<?> addLaborer(@RequestBody Laborer laborer) {
+        if (laborer == null || laborer.getUsername() == null) {
+            return ResponseEntity.badRequest().body("Username is required.");
         }
-        Laborer savedLaborer = laborerService.saveLaborer(laborer);
-        return ResponseEntity.ok(savedLaborer);
+
+        try {
+            Laborer savedLaborer = laborerService.saveLaborer(laborer);
+            return ResponseEntity.ok(savedLaborer);
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(HttpStatus.CONFLICT).body(e.getMessage());
+        }
     }
 
     @GetMapping("/{id}")
@@ -43,16 +48,14 @@ public class LaborerController {
 
     @PutMapping("/{id}")
     @PreAuthorize("hasAnyAuthority('ROLE_SYSTEM_ADMIN', 'ROLE_ADMIN', 'ROLE_MANAGER')")
-    public ResponseEntity<Laborer> updateLaborer(@PathVariable Long id, @RequestBody Laborer laborerDetails) {
+    public ResponseEntity<?> updateLaborer(@PathVariable Long id, @RequestBody Laborer laborerDetails) {
         try {
-            // Service handles the logic of mapping new fields to the existing record
             Laborer updatedLaborer = laborerService.updateLaborer(id, laborerDetails);
             return ResponseEntity.ok(updatedLaborer);
         } catch (RuntimeException e) {
-            // Returns 404 if the ID doesn't exist
-            return ResponseEntity.notFound().build();
+            // This catches "Laborer not found" and "Invalid category"
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
         } catch (Exception e) {
-            // Returns 500 for other issues (like constraint violations)
             return ResponseEntity.internalServerError().build();
         }
     }

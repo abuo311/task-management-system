@@ -14,26 +14,35 @@ import org.springframework.web.filter.OncePerRequestFilter;
 import java.io.IOException;
 
 public class AuthTokenFilter extends OncePerRequestFilter {
-    @Autowired private JwtUtils jwtUtils;
-    @Autowired private UserDetailsServiceImpl userDetailsService;
+    @Autowired
+    private JwtUtils jwtUtils;
+    @Autowired
+    private UserDetailsServiceImpl userDetailsService;
 
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
             throws ServletException, IOException {
+
+        String path = request.getRequestURI();
+        if (path.contains("/api/auth/login")) {
+            filterChain.doFilter(request, response);
+            return;
+        }
         try {
             String jwt = parseJwt(request);
             if (jwt != null && jwtUtils.validateJwtToken(jwt)) {
                 String username = jwtUtils.getUserNameFromJwtToken(jwt);
-                
+
                 try {
                     UserDetails userDetails = userDetailsService.loadUserByUsername(username);
 
                     // LOG: If this shows up, the user was FOUND in the DB
-                    System.out.println("LOG: Successfully loaded user [" + username + "] with role: " + userDetails.getAuthorities());
+                    System.out.println("LOG: Successfully loaded user [" + username + "] with role: "
+                            + userDetails.getAuthorities());
 
                     UsernamePasswordAuthenticationToken auth = new UsernamePasswordAuthenticationToken(
                             userDetails, null, userDetails.getAuthorities());
-                    
+
                     auth.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
                     SecurityContextHolder.getContext().setAuthentication(auth);
                 } catch (UsernameNotFoundException e) {

@@ -18,16 +18,17 @@ public class TaskSchedulerService {
     @Autowired
     private TaskRepository taskRepository;
 
-    @Scheduled(fixedRate = 3600000) 
+    @Scheduled(fixedRate = 3600000)
     @Transactional
     public void checkOverdueTasks() {
         LocalDate today = LocalDate.now();
-        
-        // Corrected: Removed LocalDate.parse() since task.getDeadline() is already a LocalDate
+
+        // Corrected: Removed LocalDate.parse() since task.getDeadline() is already a
+        // LocalDate
         List<Task> activeTasks = taskRepository.findAll().stream()
-            .filter(task -> task.getStatus() == TaskStatus.PENDING || task.getStatus() == TaskStatus.IN_PROGRESS)
-            .filter(task -> task.getDeadline() != null && task.getDeadline().isBefore(today))
-            .collect(Collectors.toList());
+                .filter(task -> task.getStatus() == TaskStatus.PENDING || task.getStatus() == TaskStatus.IN_PROGRESS)
+                .filter(task -> task.getDeadline() != null && task.getDeadline().isBefore(today))
+                .collect(Collectors.toList());
 
         if (!activeTasks.isEmpty()) {
             activeTasks.forEach(task -> task.setStatus(TaskStatus.OVERDUE));
