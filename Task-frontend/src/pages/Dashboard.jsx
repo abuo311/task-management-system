@@ -45,6 +45,7 @@ const Dashboard = () => {
     if (loading) return <div className="flex justify-center items-center h-screen"><Loader2 className="animate-spin text-rose-600" size={48} /></div>;
 
     return (
+
         <div className="p-4 md:p-8 space-y-8 max-w-7xl mx-auto">
             {/* Stats Grid - Responsive 1 to 4 cols */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">

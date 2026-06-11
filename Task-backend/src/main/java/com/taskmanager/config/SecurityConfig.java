@@ -71,18 +71,28 @@ public class SecurityConfig {
                                 "/api/users/stats", "/api/users/dashboard-data")
                         .authenticated()
 
+                        .requestMatchers("/api/tasks/my-tasks/**")
+                        .hasAnyAuthority("ROLE_LABORER", "ROLE_SYSTEM_ADMIN", "ROLE_ADMIN", "ROLE_MANAGER")
+
+                        // CHANGE: Use hasAnyAuthority to match the exact string "ROLE_SYSTEM_ADMIN"
+                        .requestMatchers("/api/activities/**")
+                        .hasAnyAuthority("ROLE_SYSTEM_ADMIN", "ROLE_ADMIN", "ROLE_MANAGER", "ROLE_LABORER")
+
                         // 3. ROLE-BASED ACCESS
-                        .requestMatchers("/api/users/**").hasAnyRole("SYSTEM_ADMIN", "ADMIN")
+                        .requestMatchers("/api/users/**").hasAnyAuthority("ROLE_SYSTEM_ADMIN", "ROLE_ADMIN")
 
                         // 4. TASK/LABORER/ATTENDANCE MODIFICATIONS
                         .requestMatchers(HttpMethod.POST, "/api/laborers/**", "/api/tasks/**", "/api/attendance/**")
-                        .hasAnyRole("SYSTEM_ADMIN", "MANAGER", "ADMIN", "LABORER")
+                        .hasAnyAuthority("ROLE_SYSTEM_ADMIN", "ROLE_MANAGER", "ROLE_ADMIN", "ROLE_LABORER")
+
                         .requestMatchers(HttpMethod.PUT, "/api/laborers/**", "/api/tasks/**", "/api/attendance/**")
-                        .hasAnyRole("SYSTEM_ADMIN", "MANAGER", "ADMIN", "LABORER")
+                        .hasAnyAuthority("ROLE_SYSTEM_ADMIN", "ROLE_MANAGER", "ROLE_ADMIN", "ROLE_LABORER")
+
                         .requestMatchers(HttpMethod.DELETE, "/api/laborers/**", "/api/tasks/**", "/api/attendance/**")
-                        .hasAnyRole("SYSTEM_ADMIN", "MANAGER", "ADMIN", "LABORER")
+                        .hasAnyAuthority("ROLE_SYSTEM_ADMIN", "ROLE_MANAGER", "ROLE_ADMIN", "ROLE_LABORER")
+
                         .requestMatchers(HttpMethod.PATCH, "/api/tasks/**")
-                        .hasAnyRole("SYSTEM_ADMIN", "MANAGER", "ADMIN", "USER", "LABORER")
+                        .hasAnyAuthority("ROLE_SYSTEM_ADMIN", "ROLE_MANAGER", "ROLE_ADMIN", "ROLE_USER", "ROLE_LABORER")
 
                         // 5. GENERAL READ ACCESS
                         .requestMatchers(HttpMethod.GET, "/api/laborers/**", "/api/tasks/**", "/api/attendance/**",

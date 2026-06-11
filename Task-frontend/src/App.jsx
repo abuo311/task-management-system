@@ -1,7 +1,8 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import DashboardLayout from './layouts/DashboardLayout'; // Import the layout
+import DashboardLayout from './layouts/DashboardLayout';
 import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
+import LaborerDashboard from './pages/LaborerDashboard'; // New Component
 import LaborerList from './pages/LaborerList';
 import TaskManager from './pages/TaskManager';
 import MyTasks from './pages/MyTasks';
@@ -9,6 +10,7 @@ import SpecializationManager from './pages/SpecializationManager';
 import UserManagement from './pages/UserManagement';
 import Profile from './pages/Profile';
 import AttendanceManager from './pages/AttendanceManager';
+import ThemeSettings from './pages/ThemeSettings';
 import { useAuth } from './context/AuthContext';
 import { Loader2 } from 'lucide-react';
 
@@ -18,10 +20,7 @@ const ProtectedRoute = ({ children, requiredRole }) => {
     if (loading) {
         return (
             <div className="min-h-screen flex items-center justify-center bg-slate-50">
-                <div className="flex flex-col items-center gap-4">
-                    <Loader2 className="animate-spin text-blue-600" size={48} />
-                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Securing Session...</p>
-                </div>
+                <Loader2 className="animate-spin text-blue-600" size={48} />
             </div>
         );
     }
@@ -38,26 +37,38 @@ const ProtectedRoute = ({ children, requiredRole }) => {
 };
 
 function App() {
+    const { user, hasRole } = useAuth();
+
     return (
         <Router>
             <Routes>
-                {/* Public Route */}
                 <Route path="/login" element={<Login />} />
 
-                {/* Protected Routes with Sidebar Layout */}
                 <Route element={<DashboardLayout />}>
-                    <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+                    {/* Role-based Home Routing */}
+                    <Route path="/dashboard" element={
+                        <ProtectedRoute>
+                            {hasRole("LABORER") ? <LaborerDashboard /> : <Dashboard />}
+                        </ProtectedRoute>
+                    } />
+                    
                     <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
-                    <Route path="/my-tasks" element={<ProtectedRoute requiredRole={["USER", "SYSTEM_ADMIN", "ADMIN", "MANAGER"]}><MyTasks /></ProtectedRoute>} />
+                    
+                    {/* Added LABORER to allowed roles */}
+                    <Route path="/my-tasks" element={
+                        <ProtectedRoute requiredRole={["USER", "SYSTEM_ADMIN", "ADMIN", "MANAGER", "LABORER"]}>
+                            <MyTasks />
+                        </ProtectedRoute>
+                    } />
+
                     <Route path="/attendance" element={<ProtectedRoute requiredRole={["SYSTEM_ADMIN", "ADMIN", "MANAGER"]}><AttendanceManager /></ProtectedRoute>} />
                     <Route path="/laborers" element={<ProtectedRoute requiredRole={["SYSTEM_ADMIN", "ADMIN", "MANAGER"]}><LaborerList /></ProtectedRoute>} />
                     <Route path="/tasks" element={<ProtectedRoute requiredRole={["SYSTEM_ADMIN", "ADMIN", "MANAGER"]}><TaskManager /></ProtectedRoute>} />
                     <Route path="/users" element={<ProtectedRoute requiredRole="SYSTEM_ADMIN"><UserManagement /></ProtectedRoute>} />
                     <Route path="/trades" element={<ProtectedRoute requiredRole={["SYSTEM_ADMIN", "MANAGER"]}><SpecializationManager /></ProtectedRoute>} />
-                    <Route path="/settings" element={<Navigate to="/trades" replace />} />
+                    <Route path="/theme-settings" element={<ProtectedRoute><ThemeSettings /></ProtectedRoute>} />
                 </Route>
 
-                {/* Redirects */}
                 <Route path="/" element={<Navigate to="/login" replace />} />
                 <Route path="*" element={<Navigate to="/dashboard" replace />} />
             </Routes>

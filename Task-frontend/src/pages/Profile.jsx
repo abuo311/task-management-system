@@ -1,10 +1,12 @@
 import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
+import { useTheme } from '../context/ThemeContext'; // Import this
 import api from '../api/axiosConfig';
 import { User, Phone, Save, Loader2, CheckCircle, ShieldCheck, BadgeCheck } from 'lucide-react';
 
 const Profile = () => {
     const { user, setUser } = useAuth();
+    const { themeConfig } = useTheme(); // Access the dynamic theme
     const [isSaving, setIsSaving] = useState(false);
     const [message, setMessage] = useState('');
 
@@ -31,20 +33,24 @@ const Profile = () => {
         }
     };
 
+    if (!themeConfig) return null;
+
     return (
         <div className="p-6 max-w-xl mx-auto">
             <div className="mb-6">
-                <h1 className="text-2xl font-black text-rose-950">Account</h1>
-                <p className="text-[10px] font-bold text-rose-400 uppercase tracking-widest">Settings</p>
+                {/* Dynamically styled text */}
+                <h1 className={`text-2xl font-black ${themeConfig.text.replace('text-', 'text-opacity-100 text-')}`}>Account</h1>
+                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Settings</p>
             </div>
 
-            <div className="bg-white rounded-3xl border border-rose-100 shadow-sm overflow-hidden">
-                <div className="bg-rose-900 p-8 text-center relative">
+            <div className="bg-white rounded-3xl border border-slate-100 shadow-sm overflow-hidden">
+                {/* Header uses the active theme color */}
+                <div className={`${themeConfig.bg} p-8 text-center relative`}>
                     <div className="relative inline-block">
-                        <div className="w-20 h-20 bg-rose-100 rounded-2xl mx-auto flex items-center justify-center border-2 border-rose-800">
-                            <User size={32} className="text-rose-900" />
+                        <div className="w-20 h-20 bg-white/10 rounded-2xl mx-auto flex items-center justify-center border-2 border-white/20">
+                            <User size={32} className="text-white" />
                         </div>
-                        <div className="absolute -bottom-1 -right-1 bg-emerald-500 text-white p-1 rounded-full border-2 border-rose-900">
+                        <div className="absolute -bottom-1 -right-1 bg-emerald-500 text-white p-1 rounded-full border-2 border-white">
                             <BadgeCheck size={12} />
                         </div>
                     </div>
@@ -66,25 +72,25 @@ const Profile = () => {
 
                     <div className="space-y-3">
                         <div>
-                            <label className="text-[9px] font-black text-rose-400 uppercase ml-1">Full Name</label>
+                            <label className="text-[9px] font-black text-slate-400 uppercase ml-1">Full Name</label>
                             <div className="relative mt-1">
-                                <User size={16} className="absolute left-3 top-3 text-rose-300" />
+                                <User size={16} className="absolute left-3 top-3 text-slate-300" />
                                 <input 
                                     type="text" value={formData.fullName}
                                     onChange={(e) => setFormData({...formData, fullName: e.target.value})}
-                                    className="w-full pl-9 pr-4 py-2.5 rounded-xl bg-rose-50 text-xs font-bold text-slate-700 outline-none focus:ring-2 ring-rose-200"
+                                    className="w-full pl-9 pr-4 py-2.5 rounded-xl bg-slate-50 text-xs font-bold text-slate-700 outline-none focus:ring-2 ring-slate-200"
                                 />
                             </div>
                         </div>
 
                         <div>
-                            <label className="text-[9px] font-black text-rose-400 uppercase ml-1">Phone</label>
+                            <label className="text-[9px] font-black text-slate-400 uppercase ml-1">Phone</label>
                             <div className="relative mt-1">
-                                <Phone size={16} className="absolute left-3 top-3 text-rose-300" />
+                                <Phone size={16} className="absolute left-3 top-3 text-slate-300" />
                                 <input 
                                     type="text" value={formData.phoneNumber}
                                     onChange={(e) => setFormData({...formData, phoneNumber: e.target.value})}
-                                    className="w-full pl-9 pr-4 py-2.5 rounded-xl bg-rose-50 text-xs font-bold text-slate-700 outline-none focus:ring-2 ring-rose-200"
+                                    className="w-full pl-9 pr-4 py-2.5 rounded-xl bg-slate-50 text-xs font-bold text-slate-700 outline-none focus:ring-2 ring-slate-200"
                                 />
                             </div>
                         </div>
@@ -93,7 +99,7 @@ const Profile = () => {
                     <button 
                         disabled={isSaving}
                         type="submit"
-                        className="w-full bg-rose-900 hover:bg-rose-800 text-white py-3 rounded-xl font-black uppercase text-[10px] tracking-widest flex justify-center items-center gap-2 transition-all"
+                        className={`w-full ${themeConfig.bg} hover:opacity-90 text-white py-3 rounded-xl font-black uppercase text-[10px] tracking-widest flex justify-center items-center gap-2 transition-all`}
                     >
                         {isSaving ? <Loader2 className="animate-spin" size={16} /> : <><Save size={16} /> Save Changes</>}
                     </button>

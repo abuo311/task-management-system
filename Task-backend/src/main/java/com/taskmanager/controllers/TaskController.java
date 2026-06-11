@@ -20,11 +20,8 @@ public class TaskController {
     @Autowired
     private TaskService taskService;
 
-    /**
-     * View Tasks: Use hasAnyRole to automatically handle the 'ROLE_' prefix.
-     */
     @GetMapping
-    @PreAuthorize("hasAnyRole('SYSTEM_ADMIN', 'ADMIN', 'MANAGER', 'USER')")
+    @PreAuthorize("hasAnyRole('SYSTEM_ADMIN', 'ADMIN', 'MANAGER', 'LABORER')")
     public List<Task> getAllTasks() {
         return taskService.getAllTasks();
     }
@@ -37,18 +34,13 @@ public class TaskController {
         return ResponseEntity.ok(tasks);
     }
 
-    /**
-     * Create Task: Restricted to elevated roles.
-     */
     @PostMapping
     @PreAuthorize("hasAnyRole('SYSTEM_ADMIN', 'ADMIN', 'MANAGER')")
     public Task createTask(@RequestBody Task task) {
+        // The service logic we discussed will handle setting the 'assigner'
         return taskService.createTask(task);
     }
 
-    /**
-     * Full Update: Restricted to elevated roles.
-     */
     @PutMapping("/{id}")
     @PreAuthorize("hasAnyRole('SYSTEM_ADMIN', 'ADMIN', 'MANAGER')")
     public ResponseEntity<Task> updateTask(@PathVariable Long id, @RequestBody Task task) {
@@ -61,13 +53,15 @@ public class TaskController {
     }
 
     /**
-     * Status Update (Patch): Allows standard users to update their own progress.
+     * This patch method now automatically triggers the notification
+     * because it calls taskService.updateTaskStatus.
      */
     @PatchMapping("/{id}")
-    @PreAuthorize("hasAnyRole('SYSTEM_ADMIN', 'ADMIN', 'MANAGER', 'USER')")
+    @PreAuthorize("hasAnyRole('SYSTEM_ADMIN', 'ADMIN', 'MANAGER', 'LABORER')")
     public ResponseEntity<Task> patchTask(@PathVariable Long id, @RequestBody Map<String, Object> updates) {
         try {
             String newStatus = (String) updates.get("status");
+            // This service call now contains the notification logic we added
             Task updatedTask = taskService.updateTaskStatus(id, newStatus);
             return ResponseEntity.ok(updatedTask);
         } catch (RuntimeException e) {
@@ -75,22 +69,15 @@ public class TaskController {
         }
     }
 
-    /**
-     * Task Assignment: Restricted to elevated roles.
-     */
     @PostMapping("/assign")
-    @PreAuthorize("hasAnyRole('SYSTEM_ADMIN', 'ADMIN', 'MANAGER')") // Allowing USER role to assign tasks to themselves
+    @PreAuthorize("hasAnyRole('SYSTEM_ADMIN', 'ADMIN', 'MANAGER')")
     public ResponseEntity<Task> assignTask(@RequestBody TaskAssignmentDto assignmentDto) {
         Task updatedTask = taskService.assignTaskToLaborer(
-                assignmentDto.getTaskId(), 
-                assignmentDto.getLaborerId()
-        );
+                assignmentDto.getTaskId(),
+                assignmentDto.getLaborerId());
         return ResponseEntity.ok(updatedTask);
     }
 
-    /**
-     * Delete Task: Restricted to elevated roles.
-     */
     @DeleteMapping("/{id}")
     @PreAuthorize("hasAnyRole('SYSTEM_ADMIN', 'ADMIN', 'MANAGER')")
     public ResponseEntity<Void> deleteTask(@PathVariable Long id) {

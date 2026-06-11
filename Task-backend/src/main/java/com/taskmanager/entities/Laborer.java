@@ -1,6 +1,6 @@
-
 package com.taskmanager.entities;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.persistence.*;
@@ -42,12 +42,12 @@ public class Laborer implements UserDetails {
     private String contactNumber;
     private String trade;
 
-    @Enumerated(EnumType.STRING) // Still an Enum
+    @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private EmploymentType employmentType;
 
     @Column(nullable = false)
-    private String workCategory; // Changed to String
+    private String workCategory;
 
     @Column(nullable = false)
     private LocalDate hireDate;
@@ -59,30 +59,33 @@ public class Laborer implements UserDetails {
     private List<Task> tasks;
 
     // --- Security / UserDetails Methods ---
-    // --- Security / UserDetails Methods ---
 
     @Override
+    @JsonIgnore // Added to prevent Jackson from attempting to serialize the interface
     public Collection<? extends GrantedAuthority> getAuthorities() {
-        // Assign the LABORER role to this entity
         return Collections.singletonList(new SimpleGrantedAuthority("ROLE_LABORER"));
     }
 
     @Override
+    @JsonIgnore // Added to prevent Jackson from treating this as a property
     public boolean isAccountNonExpired() {
         return true;
     }
 
     @Override
+    @JsonIgnore // Added to prevent Jackson from treating this as a property
     public boolean isAccountNonLocked() {
         return true;
     }
 
     @Override
+    @JsonIgnore // Added to prevent Jackson from treating this as a property
     public boolean isCredentialsNonExpired() {
         return true;
     }
 
     @Override
+    @JsonIgnore // Added to prevent Jackson from treating this as a property
     public boolean isEnabled() {
         return true;
     }
@@ -100,7 +103,6 @@ public class Laborer implements UserDetails {
     public boolean isEligibleForPromotion() {
         if (this.hireDate == null)
             return false;
-        // employmentType is still an Enum, so this remains safe
         if (this.employmentType == EmploymentType.FULL_TIME)
             return false;
         return ChronoUnit.YEARS.between(hireDate, LocalDate.now()) >= 8;
@@ -111,6 +113,4 @@ public class Laborer implements UserDetails {
     public enum EmploymentType {
         CASUAL, FULL_TIME, PART_TIME, CONTRACTOR
     }
-
-    // Note: WorkCategory enum was removed
 }

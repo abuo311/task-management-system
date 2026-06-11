@@ -1,25 +1,17 @@
-// src/layouts/DashboardLayout.jsx
-import React, { useState } from 'react';
+import React from 'react';
 import { Outlet } from 'react-router-dom';
 import Sidebar from '../components/Sidebar';
-import Navbar from '../components/Navbar'; // 1. Import Navbar
+import Navbar from '../components/Navbar';
 
 const DashboardLayout = () => {
-    const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-
     return (
-        <div className="flex min-h-screen bg-rose-50/30">
-            <Sidebar 
-                isOpen={isSidebarOpen} 
-                onClose={() => setIsSidebarOpen(false)} 
-            />
-            
-            <div className="flex-1 flex flex-col md:ml-20 lg:ml-64 w-full">
-                {/* 2. Add the Navbar here */}
-                <Navbar toggleSidebar={() => setIsSidebarOpen(true)} />
-                
-                <main className="flex-1 overflow-y-auto p-6">
-                    <Outlet />
+        // Enforce white background and slate text regardless of theme
+        <div className="min-h-screen bg-white text-slate-900">
+            <Sidebar />
+            <div className="md:pl-64 flex flex-col min-h-screen">
+                <Navbar />
+                <main className="p-6">
+                    <Outlet /> {/* This renders your pages */}
                 </main>
             </div>
         </div>

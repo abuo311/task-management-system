@@ -1,14 +1,14 @@
 package com.taskmanager.entities;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-
 import java.time.LocalDate;
 import java.time.LocalTime;
-import java.time.LocalDateTime; // Added for timestamping
+import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "tasks")
@@ -29,29 +29,34 @@ public class Task {
 
     private LocalDate deadline;
 
+    @JsonProperty("assignerName")
     @Column(name = "assigner_name")
     private String assignerName;
 
+    @JsonProperty("assignerPhone")
     @Column(name = "assigner_phone")
     private String assignerPhone;
 
-    // Matches your React time field
     private LocalTime time;
 
-    // Tracks when the task was last modified (e.g., bulk completed)
     private LocalDateTime updatedAt;
 
-    private String category; // e.g., Site Preparation, Finishing
+    private String category;
 
     @Enumerated(EnumType.STRING)
     private TaskStatus status = TaskStatus.PENDING;
 
-    @ManyToOne(fetch = FetchType.LAZY) // Changed from EAGER
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "laborer_id")
     @JsonIgnoreProperties({ "tasks", "handler", "hibernateLazyInitializer" })
     private Laborer laborer;
 
-    // Automatically set the timestamp before updating
+    // Added relationship to the User (Manager) who assigns the task
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "assigner_id")
+    @JsonIgnoreProperties({ "hibernateLazyInitializer", "handler" })
+    private User assigner;
+
     @PreUpdate
     protected void onUpdate() {
         this.updatedAt = LocalDateTime.now();

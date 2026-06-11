@@ -1,5 +1,6 @@
 package com.taskmanager.controllers;
 
+import com.taskmanager.dto.AttendanceRecordDTO;
 import com.taskmanager.entities.AttendanceRecord;
 import com.taskmanager.services.AttendanceService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -18,11 +19,10 @@ public class AttendanceController {
     @Autowired
     private AttendanceService service;
 
-    // Use hasAnyAuthority to check for the exact string (e.g., 'ADMIN')
-    // OR use hasAnyRole if your JWT correctly adds the 'ROLE_' prefix
     @GetMapping
     @PreAuthorize("hasAnyAuthority('ROLE_SYSTEM_ADMIN', 'ROLE_ADMIN', 'ROLE_MANAGER', 'SYSTEM_ADMIN', 'ADMIN', 'MANAGER')")
-    public List<AttendanceRecord> getAll() {
+    public List<AttendanceRecordDTO> getAll() {
+        // Now returns List<AttendanceRecordDTO> instead of List<AttendanceRecord>
         return service.getAllAttendance();
     }
 
@@ -31,16 +31,14 @@ public class AttendanceController {
     public ResponseEntity<?> create(@RequestBody AttendanceRecord record) {
         try {
             AttendanceRecord saved = service.save(record);
-            return ResponseEntity.ok(saved);
+            // Convert to DTO before sending back to React for consistency
+            return ResponseEntity.ok(service.convertToDto(saved));
         } catch (RuntimeException e) {
-            // This will return a 400 status to your React frontend
-            // with the message: "Attendance for this laborer has already been recorded..."
             return ResponseEntity.badRequest().body(e.getMessage());
         }
     }
 
     @GetMapping("/whoami")
-    // Anyone who is authenticated can check who they are
     @PreAuthorize("isAuthenticated()")
     public ResponseEntity<?> whoAmI(Authentication authentication) {
         return ResponseEntity.ok(Map.of(
